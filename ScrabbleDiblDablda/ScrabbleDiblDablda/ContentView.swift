@@ -53,10 +53,36 @@ struct ContentView: View {
         
         let formedWord = WordProcessor.formWord(from: symbols, start: start, end: end, rowCount: 15, colCount: 15)
         lastWord = formedWord.isEmpty ? "Nothing to submit" : formedWord
-        print(lastWord)
         
         startCoordinate = nil
         endCoordinate = nil
+        submitWordToServer(word: lastWord)
+    }
+    
+    func submitWordToServer(word: String) {
+        guard let url = URL(string: "http://127.0.0.1:8080/players/validateWord") else { return }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONEncoder().encode(["word": word])
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard let data = data, error == nil else {
+                print("Error: \(error?.localizedDescription ?? "Unknown error")")
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("HTTP Status Code: \(httpResponse.statusCode)")
+                if let json = try? JSONDecoder().decode([String: String].self, from: data),
+                   let status = json["status"] {
+                    print("Server response: \(status)")
+                } else {
+                    print("Failed to decode response or word is not valid.")
+                }
+            }
+        }.resume()
     }
 }
 
