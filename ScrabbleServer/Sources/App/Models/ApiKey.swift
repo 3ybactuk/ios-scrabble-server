@@ -13,11 +13,15 @@ final class ApiKey: Model, Content {
     @Field(key: "max_uses")
     var maxUses: Int32
     
+    @Field(key: "api_role")
+    var role: String
+    
     init() { }
 
-    init(id: UUID? = nil, currentUses: Int32, maxUses: Int32) {
+    init(id: UUID? = nil, currentUses: Int32, maxUses: Int32, role: String) {
         self.id = id
         self.currentUses = currentUses
         self.maxUses = maxUses
+        self.role = role
     }
 }

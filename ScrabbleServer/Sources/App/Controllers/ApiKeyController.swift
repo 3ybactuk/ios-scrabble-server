@@ -23,6 +23,16 @@ struct ApiKeyController: RouteCollection {
         return apiKey
     }
     
+    func incrementUsage(req: Request) async throws -> ApiKey {
+        guard let apiKey = try await ApiKey.find(req.parameters.get("id"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        apiKey.currentUses += 1
+        try await apiKey.update(on: req.db)
+        return apiKey
+    }
+    
     func update(req: Request) async throws -> ApiKey {
         guard let apiKey = try await ApiKey.find(req.parameters.get("id"), on: req.db) else {
             throw Abort(.notFound)
@@ -31,6 +41,7 @@ struct ApiKeyController: RouteCollection {
         let updatedApiKey = try req.content.decode(ApiKey.self)
         apiKey.currentUses = updatedApiKey.currentUses
         apiKey.maxUses = updatedApiKey.maxUses
+        apiKey.role = updatedApiKey.role
         try await updatedApiKey.update(on: req.db)
         return updatedApiKey
     }
