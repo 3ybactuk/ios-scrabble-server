@@ -22,6 +22,20 @@ struct PlayerController: RouteCollection {
         try await player.save(on: req.db)
         return player
     }
+    
+    func update(req: Request) async throws -> Player {
+        guard let player = try await Player.find(req.parameters.get("id"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        let updatedPlayer = try req.content.decode(Player.self)
+        
+        player.roomId = updatedPlayer.roomId
+        player.score = updatedPlayer.score
+        
+        try await updatedPlayer.update(on: req.db)
+        return updatedPlayer
+    }
 
     func delete(req: Request) async throws -> HTTPStatus {
         guard let player = try await Player.find(req.parameters.get("playerID"), on: req.db) else {
