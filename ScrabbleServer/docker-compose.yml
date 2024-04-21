@@ -1,0 +1,124 @@
+# Docker Compose file for Vapor
+#
+# Install Docker on your system to run and test
+# your Vapor app in a production-like environment.
+#
+# Note: This file is intended for testing and does not
+# implement best practices for a production deployment.
+#
+# Learn more: https://docs.docker.com/compose/reference/
+#
+#   Build images: docker-compose build
+#      Start app: docker-compose up app
+# Start database: docker-compose up db
+# Run migrations: docker-compose run migrate
+#       Stop all: docker-compose down (add -v to wipe db)
+#
+version: '3.7'
+
+volumes:
+  postgres_data:
+    name: postgres_data
+  pgadmin-data:
+  
+networks:
+  postgres:
+    driver: bridge
+  
+x-shared_environment: &shared_environment
+  LOG_LEVEL: ${LOG_LEVEL:-debug}
+  DATABASE_HOST: postgresql
+  DATABASE_NAME: scrabbledb
+  DATABASE_USERNAME: postgres
+  DATABASE_PASSWORD: password
+  
+services:
+  app:
+    image: scrabble-server:latest
+    build:
+      context: .
+    environment:
+      <<: *shared_environment
+    depends_on:
+      - postgresql
+    ports:
+      - '8080:8080'
+    # user: '0' # uncomment to run as root for testing purposes even though Dockerfile defines 'vapor' user.
+    command: ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "8080"]
+    networks:
+      - postgres
+    
+  migrate:
+    image: scrabble-server:latest
+    build:
+      context: .
+    environment:
+      <<: *shared_environment
+    depends_on:
+      - postgresql
+    command: ["migrate", "--yes"]
+    deploy:
+      replicas: 0
+    networks:
+      - postgres
+      
+  revert:
+    image: scrabble-server:latest
+    build:
+      context: .
+    environment:
+      <<: *shared_environment
+    depends_on:
+      - postgresql
+    command: ["migrate", "--revert", "--yes"]
+    deploy:
+      replicas: 0
+    networks:
+      - postgres
+      
+      
+  postgresql:
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/pgdata
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "password"
+      POSTGRES_DB: "scrabbledb"
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 4G
+    networks:
+      - postgres
+
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4:7.2
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "pgadmin@email.com"
+      PGADMIN_DEFAULT_PASSWORD: "pgadmin"
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+    networks:
+      - postgres
