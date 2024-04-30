@@ -6,6 +6,9 @@ struct ApiKeyController: RouteCollection {
         let apiKeys = routes.grouped("api_keys")
 
         apiKeys.get(use: { try await self.index(req: $0) })
+        apiKeys.post("update", use: {try await self.update(req: $0)})
+        apiKeys.post("increment_usage", use: {try await self.incrementUsage(req: $0)})
+        apiKeys.post("delete", use: {try await self.delete(req: $0)})
         apiKeys.post(use: { try await self.create(req: $0) })
         apiKeys.group(":apiKeyID") { apiKey in
             apiKey.delete(use: { try await self.delete(req: $0) })

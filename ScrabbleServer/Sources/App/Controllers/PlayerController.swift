@@ -6,6 +6,7 @@ struct PlayerController: RouteCollection {
         let players = routes.grouped("players")
 
         players.get(use: { try await self.index(req: $0) })
+        players.post("add_to_room", use: { try await self.addToRoom(req: $0)})
         players.post(use: { try await self.create(req: $0) })
         players.group(":playerID") { player in
             player.delete(use: { try await self.delete(req: $0) })
@@ -21,6 +22,10 @@ struct PlayerController: RouteCollection {
 
         try await player.save(on: req.db)
         return player
+    }
+    
+    func addToRoom(req: Request) async throws -> HTTPStatus {
+        return .ok
     }
     
     func update(req: Request) async throws -> Player {

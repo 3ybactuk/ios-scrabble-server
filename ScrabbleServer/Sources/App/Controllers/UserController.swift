@@ -7,9 +7,11 @@ struct UserController: RouteCollection {
 
         users.get(use: { try await self.index(req: $0) })
         users.post(use: { try await self.create(req: $0) })
+//        users.post("get_user", use: {try await self.getUser(req: $0)})
         users.group(":userID") { user in
             user.delete(use: { try await self.delete(req: $0) })
         }
+        
     }
 
     func index(req: Request) async throws -> [User] {
