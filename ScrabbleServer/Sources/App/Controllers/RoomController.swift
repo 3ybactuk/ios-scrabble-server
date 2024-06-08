@@ -18,9 +18,25 @@ struct RoomController: RouteCollection {
 
     func create(req: Request) async throws -> Room {
         let room = try req.content.decode(Room.self)
-
+        
         try await room.save(on: req.db)
         return room
+    }
+    
+    func update(req: Request) async throws -> Room {
+        guard let room = try await Room.find(req.parameters.get("id"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        let updatedRoom = try req.content.decode(Room.self)
+        
+        room.name = updatedRoom.name
+        room.adminId = updatedRoom.adminId
+        room.joinCode = updatedRoom.joinCode
+        room.status = updatedRoom.status
+        
+        try await updatedRoom.update(on: req.db)
+        return updatedRoom
     }
 
     func delete(req: Request) async throws -> HTTPStatus {
